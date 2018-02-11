@@ -9,7 +9,7 @@ class orderFallController {
   getAllOrderFall(req, res, next) {
     console.log('log')
     try {
-      orecleDataService.ReadData('select * from TRANSFORM_RULES1')
+      orecleDataService.ReadData('select * from TRANSFORM_RULES')
         .then(result => {
           res.status(400);
           res.set("Connection", "close");
