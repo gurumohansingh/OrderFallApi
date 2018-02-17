@@ -15,7 +15,8 @@ router.get('/orderfallout/task/:id',serviceController.getOrderFall);
 //post  for new form
 router.post('/orderfallout/task',serviceController.AddNewOrderFall);
 
-//put for edit orderfall 
-router.put('/orderfallout/task/:id',serviceController.EditOrderFall);
-
+//get services from Mapping
+router.get('/orderfallout/services/:name',serviceController.getServices);
+//delete All data
+router.delete('/orderfallout/task/:id',serviceController.DeleteOrderFall);
 module.exports = router;
