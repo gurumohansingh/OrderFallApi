@@ -54,27 +54,13 @@ class orderFallController {
       try {
         var jSonData = JSON.parse(req.body.postData);
         var taskId = jSonData.editId;
+        var edit = taskId ? taskId : null;
         if (jSonData.addEditFlag === "Edit" && jSonData.editId) {
           var query = "UPDATE ORDER_FALLOUT_TASK set NAME=:NAME, LAST_MODIFIED= SYSDATE, DESCRIPTION = :DESCRIPTION where OF_TASK_ID=:id";
           var data = yield oracleDataService.AddDataOrderFalloutTask(query,
             {
               NAME: jSonData.orderFallMain.name,
               DESCRIPTION: jSonData.orderFallMain.description,
-              id: jSonData.editId
-            })
-          query = "delete from extraction_rules where OF_TASK_ID=:id";
-          yield oracleDataService.AddDataOrderFalloutTask(query,
-            {
-              id: jSonData.editId
-            })
-          query = "delete from transform_rules where OF_TASK_ID=:id";
-          yield oracleDataService.AddDataOrderFalloutTask(query,
-            {
-              id: jSonData.editId
-            })
-          query = "delete from request_payload where OF_TASK_ID=:id";
-          yield oracleDataService.AddDataOrderFalloutTask(query,
-            {
               id: jSonData.editId
             })
         } else {
@@ -87,59 +73,109 @@ class orderFallController {
           taskId = data.outBinds.id[0]
         }
         if (taskId) {
-          var newTaskId = taskId
+          var obj = new orderFallController();
           var extractionTaskData = jSonData.extractionTask;
-          for (var i = 0; i < extractionTaskData.length; i++) {
-
-            extractionTaskData[i].of_task_id = newTaskId;
-            var keys = [], keysVal = [];
-            for (var data in extractionTaskData[i]) keys.push(data);
-            for (var data in extractionTaskData[i]) keysVal.push(':' + data);
-            var colums = keys.toString();
-            query = "INSERT INTO EXTRACTION_RULES (" + colums + ") values(" + keysVal.toString() + ")";
-            yield oracleDataService.AddDataOrderFalloutTask(query, extractionTaskData[i]).then(data => {
-              console.log('EXTRACTION RULES Data Inserted successfully');
-            })
-              .catch(err => {
-                res.json({ Message: 'Error' + err.message })
-              })
-          }
+          yield obj.AddExtractionTaskData(extractionTaskData, taskId, edit)
           var transformTaskData = jSonData.transformTask
-          for (var i = 0; i < transformTaskData.length; i++) {
-
-            transformTaskData[i].of_task_id = newTaskId;
-            var keys = [], keysVal = [];
-            for (var data in transformTaskData[i]) keys.push(data);
-            for (var data in transformTaskData[i]) keysVal.push(':' + data);
-            query = "INSERT INTO transform_rules (" + keys.toString() + ") values(" + keysVal.toString() + ")";
-            yield oracleDataService.AddDataOrderFalloutTask(query, transformTaskData[i]).then(data => {
-              console.log('Transform Rules Data Inserted successfully')
-            })
-              .catch(err => {
-                res.json({ Message: 'Error' + err.message })
-              })
-          }
+          yield obj.AddTransformTaskData(transformTaskData, taskId, edit);
           var requestMessageData = jSonData.requestMessage
-          for (var i = 0; i < requestMessageData.length; i++) {
-
-            requestMessageData[i].of_task_id = newTaskId;
-            var keys = [], keysVal = [];
-            for (var data in requestMessageData[i]) keys.push(data);
-            for (var data in requestMessageData[i]) keysVal.push(':' + data);
-            query = "INSERT INTO request_payload (" + keys.toString() + ") values(" + keysVal.toString() + ")";
-            yield oracleDataService.AddDataOrderFalloutTask(query, requestMessageData[i]).then(data => {
-              console.log('Request Message Data Inserted successfully')
-
-            })
-              .catch(err => {
-                res.json({ Message: 'Error' + err.message })
-              })
-          }
+          yield obj.AddRequestMessageData(requestMessageData, taskId,edit);
           res.json({ Message: 'Success' })
         }
       } catch (error) {
-        res.json({ Message: 'Error' + error })
+         res.status(400);
+        res.json({ Message: error })
       }
+    })
+  }
+  AddExtractionTaskData(extractionTaskData, newTaskId, edit) {
+    return new Promise((resolve, reject) => {
+      co(function* () {
+        var query = "";
+        if (edit) {
+          query = "delete from extraction_rules where OF_TASK_ID=:id";
+          yield oracleDataService.AddDataOrderFalloutTask(query,
+            {
+              id: newTaskId
+            })
+        }
+        for (var i = 0; i < extractionTaskData.length; i++) {
+          extractionTaskData[i].of_task_id = newTaskId;
+          var keys = [], keysVal = [];
+          for (var data in extractionTaskData[i]) keys.push(data);
+          for (var data in extractionTaskData[i]) keysVal.push(':' + data);
+          var colums = keys.toString();
+          query = "INSERT INTO EXTRACTION_RULES (" + colums + ") values(" + keysVal.toString() + ")";
+          yield oracleDataService.AddDataOrderFalloutTask(query, extractionTaskData[i]).then(data => {
+            console.log('EXTRACTION RULES Data Inserted successfully');
+            if (i === extractionTaskData.length - 1)
+              return resolve(true);
+          })
+            .catch(err => {
+              return reject({ Message: 'Error' + err.message });
+            })
+        }
+      })
+    })
+  }
+  AddTransformTaskData(transformTaskData, newTaskId, edit) {
+    return new Promise((resolve, reject) => {
+      co(function* () {
+        var query = "";
+        if (edit) {
+          query = "delete from transform_rules where OF_TASK_ID=:id";
+          yield oracleDataService.AddDataOrderFalloutTask(query,
+            {
+              id: newTaskId
+            })
+        }
+        for (var i = 0; i < transformTaskData.length; i++) {
+
+          transformTaskData[i].of_task_id = newTaskId;
+          var keys = [], keysVal = [];
+          for (var data in transformTaskData[i]) keys.push(data);
+          for (var data in transformTaskData[i]) keysVal.push(':' + data);
+          query = "INSERT INTO transform_rules (" + keys.toString() + ") values(" + keysVal.toString() + ")";
+          yield oracleDataService.AddDataOrderFalloutTask(query, transformTaskData[i]).then(data => {
+            console.log('Transform Rules Data Inserted successfully')
+            if (i === transformTaskData.length - 1)
+              return resolve(true);
+          })
+            .catch(err => {
+              res.json({ Message: 'Error ' + err.message })
+            })
+        }
+      })
+    })
+  }
+  AddRequestMessageData(requestMessageData, newTaskId, edit) {
+    return new Promise((resolve, reject) => {
+      co(function* () {
+        var query = "";
+        if (edit) {
+          query = "delete from request_payload where OF_TASK_ID=:id";
+          yield oracleDataService.AddDataOrderFalloutTask(query,
+            {
+              id: newTaskId
+            })
+        }
+        for (var i = 0; i < requestMessageData.length; i++) {
+          requestMessageData[i].of_task_id = newTaskId;
+          var keys = [], keysVal = [];
+          for (var data in requestMessageData[i]) keys.push(data);
+          for (var data in requestMessageData[i]) keysVal.push(':' + data);
+          query = "INSERT INTO request_payload (" + keys.toString() + ") values(" + keysVal.toString() + ")";
+          yield oracleDataService.AddDataOrderFalloutTask(query, requestMessageData[i]).then(data => {
+            console.log('Request Message Data Inserted successfully')
+            if (i === requestMessageData.length - 1)
+              return resolve(true);
+
+          })
+            .catch(err => {
+              res.json({ Message: 'Error' + err.message })
+            })
+        }
+      })
     })
   }
   getOrderFall(req, res, next) {
@@ -167,7 +203,7 @@ class orderFallController {
 
   DeleteOrderFall(req, res, next) {
     co(function* () {
-      try {        
+      try {
         var id = req.params.id;
         if (id) {
           var query = "delete from extraction_rules where OF_TASK_ID=:id";
