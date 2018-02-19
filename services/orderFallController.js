@@ -229,7 +229,8 @@ class orderFallController {
         }
         res.json({ Message: "Deleted Successfully" })
       } catch (error) {
-        res.json({ Message: 'Error' + error })
+        res.status(400);
+        res.json({ Message: error.message })
       }
     })
   }
