@@ -9,7 +9,7 @@ var co = require('co');
 class orderFallController {
   getAllOrderFall(req, res, next) {
     try {
-      oracleDataService.ReadData('select * from order_fallout_task where created_on >=(sysdate-30)', {})
+      oracleDataService.ReadData('select * from order_fallout_task where status is null and created_on >=(sysdate-30)', {})
         .then(result => {
           res.status(200);
           res.set("Connection", "close");
@@ -221,7 +221,7 @@ class orderFallController {
             {
               id: id
             })
-          query = "delete from  ORDER_FALLOUT_TASK where OF_TASK_ID=:id";
+          query =  "UPDATE ORDER_FALLOUT_TASK set status=0, LAST_MODIFIED= SYSDATE where OF_TASK_ID=:id";
           yield oracleDataService.AddDataOrderFalloutTask(query,
             {
               id: id
