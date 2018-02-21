@@ -9,7 +9,7 @@ var co = require('co');
 class orderFallController {
   getAllOrderFall(req, res, next) {
     try {
-      oracleDataService.ReadData('select * from order_fallout_task where status is null and created_on >=(sysdate-30)', {})
+      oracleDataService.ReadData('select * from order_fallout_task where status !=0 or status is null and created_on >=(sysdate-30)', {})
         .then(result => {
           res.status(200);
           res.set("Connection", "close");
